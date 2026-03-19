@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: ai-news-aggregator-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_news_aggregator}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: ai-news-aggregator-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-ai_news_aggregator}
+      - ENVIRONMENT=LOCAL
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_MODEL=${HF_MODEL:-meta-llama/Llama-3.2-3B-Instruct}
+      - LLM_PROVIDER=huggingface
+      - MY_EMAIL=${MY_EMAIL}
+      - APP_PASSWORD=${APP_PASSWORD}
+      - APP_AUTHOR=${APP_AUTHOR:-Ahmad Yasin}
+      - WEBSHARE_USERNAME=${WEBSHARE_USERNAME}
+      - WEBSHARE_PASSWORD=${WEBSHARE_PASSWORD}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: ai-news-aggregator-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
