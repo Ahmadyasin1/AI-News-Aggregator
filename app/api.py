@@ -112,6 +112,15 @@ app.add_middleware(
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 
+@app.get("/", tags=["System"])
+def root():
+    return {
+        "message": "AI News Aggregator API is running! 🚀",
+        "author": "Ahmad Yasin · Founder @Nexariza Ai",
+        "docs_url": "/docs",
+        "frontend": "Please visit your frontend Static Site URL to view the dashboard."
+    }
+
 @app.get("/api/health", tags=["System"])
 def health_check():
     scheduler_running = False

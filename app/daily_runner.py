@@ -101,6 +101,9 @@ def run_daily_pipeline(hours: int = 24, top_n: int = 10) -> dict:
             logger.error(
                 f"✗ Failed to send email: {email_result.get('error', 'Unknown error')}"
             )
+            # Render Free tier blocks SMTP. Don't fail the ENTIRE pipeline if just the email fails.
+            results["success"] = True
+            results["email"]["error"] = email_result.get('error', 'Unknown error')
 
     except Exception as e:
         logger.error(f"Pipeline failed with error: {e}", exc_info=True)
