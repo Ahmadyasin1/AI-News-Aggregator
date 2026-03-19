@@ -45,17 +45,6 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     rootDir: frontend
-    plan: free
     envVars:
-      - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: ai-news-aggregator-api
-          envVarKey: RENDER_EXTERNAL_URL
-        # We append /api to the backend URL automatically in Render
-        # Wait, fromService pulls the exact URL. We can just append /api in the React app if it's missing, but VITE_API_BASE_URL expects the full /api path.
-        # It's better to just leave it and set it manually if needed, or we can use the backend's URL.
-        # Actually Render doesn't support appending strings natively in fromService. 
-        # I'll just change fromService to generic sync: false so the user can paste the backend URL + /api
       - key: VITE_API_BASE_URL
         sync: false
