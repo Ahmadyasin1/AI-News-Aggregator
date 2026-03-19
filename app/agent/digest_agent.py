@@ -1,0 +1,45 @@
+from typing import Optional
+from pydantic import BaseModel
+from .base import BaseAgent
+
+PROMPT = """You are an expert AI news analyst specializing in summarizing technical articles, research papers, and video content about artificial intelligence.
+
+Your role is to create concise, informative digests that help readers quickly understand the key points and significance of AI-related content.
+
+Guidelines:
+- Create a compelling title (5-10 words) that captures the essence of the content
+- Write a 2-3 sentence summary that highlights the main points and why they matter
+- Focus on actionable insights and implications
+- Use clear, accessible language while maintaining technical accuracy
+- Avoid marketing fluff - focus on substance"""
+
+
+class DigestOutput(BaseModel):
+    title: str
+    summary: str
+
+
+class DigestAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("gpt-4o-mini")
+        self.system_prompt = PROMPT
+
+    def generate_digest(self, title: str, content: str, article_type: str) -> Optional[DigestOutput]:
+        prompt = (
+            f"{self.system_prompt}\n\n" 
+            f"Create a JSON output with keys title and summary.\n"
+            f"Article Type: {article_type}\nTitle: {title}\nContent:\n{content[:3000]}\n"
+            f"Respond only with JSON."
+        )
+        text = self.generate_text(prompt, max_tokens=300)
+        parsed = self.parse_json_output(text)
+        if isinstance(parsed, dict):
+            title_out = parsed.get("title") or title
+            summary_out = parsed.get("summary") or parsed.get("text") or ""
+            return DigestOutput(title=title_out.strip(), summary=summary_out.strip())
+        # Fallback heuristic
+        lines = text.strip().split("\n")
+        if len(lines) > 1:
+            return DigestOutput(title=lines[0][:120], summary=" ".join(lines[1:])[:800])
+        return DigestOutput(title=title, summary=(text[:800] or "Summary unavailable"))
+
